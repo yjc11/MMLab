@@ -1,0 +1,803 @@
+2023-02-05 00:15:49,912 - mmcls - INFO - Environment info:
+------------------------------------------------------------
+sys.platform: linux
+Python: 3.8.10 (default, Jun  4 2021, 15:09:15) [GCC 7.5.0]
+CUDA available: True
+GPU 0: NVIDIA GeForce GTX 1080 Ti
+CUDA_HOME: /usr/local/cuda
+NVCC: Cuda compilation tools, release 11.3, V11.3.109
+GCC: gcc (Ubuntu 9.3.0-17ubuntu1~20.04) 9.3.0
+PyTorch: 1.10.0+cu113
+PyTorch compiling details: PyTorch built with:
+  - GCC 7.3
+  - C++ Version: 201402
+  - Intel(R) Math Kernel Library Version 2020.0.0 Product Build 20191122 for Intel(R) 64 architecture applications
+  - Intel(R) MKL-DNN v2.2.3 (Git Hash 7336ca9f055cf1bfa13efb658fe15dc9b41f0740)
+  - OpenMP 201511 (a.k.a. OpenMP 4.5)
+  - LAPACK is enabled (usually provided by MKL)
+  - NNPACK is enabled
+  - CPU capability usage: AVX2
+  - CUDA Runtime 11.3
+  - NVCC architecture flags: -gencode;arch=compute_37,code=sm_37;-gencode;arch=compute_50,code=sm_50;-gencode;arch=compute_60,code=sm_60;-gencode;arch=compute_70,code=sm_70;-gencode;arch=compute_75,code=sm_75;-gencode;arch=compute_80,code=sm_80;-gencode;arch=compute_86,code=sm_86
+  - CuDNN 8.2
+  - Magma 2.5.2
+  - Build settings: BLAS_INFO=mkl, BUILD_TYPE=Release, CUDA_VERSION=11.3, CUDNN_VERSION=8.2.0, CXX_COMPILER=/opt/rh/devtoolset-7/root/usr/bin/c++, CXX_FLAGS= -Wno-deprecated -fvisibility-inlines-hidden -DUSE_PTHREADPOOL -fopenmp -DNDEBUG -DUSE_KINETO -DUSE_FBGEMM -DUSE_QNNPACK -DUSE_PYTORCH_QNNPACK -DUSE_XNNPACK -DSYMBOLICATE_MOBILE_DEBUG_HANDLE -DEDGE_PROFILER_USE_KINETO -O2 -fPIC -Wno-narrowing -Wall -Wextra -Werror=return-type -Wno-missing-field-initializers -Wno-type-limits -Wno-array-bounds -Wno-unknown-pragmas -Wno-sign-compare -Wno-unused-parameter -Wno-unused-variable -Wno-unused-function -Wno-unused-result -Wno-unused-local-typedefs -Wno-strict-overflow -Wno-strict-aliasing -Wno-error=deprecated-declarations -Wno-stringop-overflow -Wno-psabi -Wno-error=pedantic -Wno-error=redundant-decls -Wno-error=old-style-cast -fdiagnostics-color=always -faligned-new -Wno-unused-but-set-variable -Wno-maybe-uninitialized -fno-math-errno -fno-trapping-math -Werror=format -Wno-stringop-overflow, LAPACK_INFO=mkl, PERF_WITH_AVX=1, PERF_WITH_AVX2=1, PERF_WITH_AVX512=1, TORCH_VERSION=1.10.0, USE_CUDA=ON, USE_CUDNN=ON, USE_EXCEPTION_PTR=1, USE_GFLAGS=OFF, USE_GLOG=OFF, USE_MKL=ON, USE_MKLDNN=ON, USE_MPI=OFF, USE_NCCL=ON, USE_NNPACK=ON, USE_OPENMP=ON, 
+
+TorchVision: 0.11.1+cu113
+OpenCV: 4.6.0
+MMCV: 1.6.1
+MMCV Compiler: GCC 9.3
+MMCV CUDA Compiler: 11.3
+MMClassification: 0.25.0+
+------------------------------------------------------------
+
+2023-02-05 00:15:49,912 - mmcls - INFO - Distributed training: False
+2023-02-05 00:15:50,030 - mmcls - INFO - Config:
+model = dict(
+    type='ImageClassifier',
+    backbone=dict(type='MobileNetV2', widen_factor=1.0),
+    neck=dict(type='GlobalAveragePooling'),
+    head=dict(
+        type='LinearClsHead',
+        num_classes=5,
+        in_channels=1280,
+        loss=dict(type='CrossEntropyLoss', loss_weight=1.0),
+        topk=(1, 1)))
+load_from = 'mobilenet_v2_batch256_imagenet_20200708-3b2dc3af.pth'
+data = dict(
+    samples_per_gpu=32,
+    workers_per_gpu=2,
+    train=dict(
+        type='CustomDataset',
+        data_prefix='data/train',
+        pipeline=[
+            dict(type='LoadImageFromFile'),
+            dict(type='RandomResizedCrop', size=224, backend='pillow'),
+            dict(type='RandomFlip', flip_prob=0.5, direction='horizontal'),
+            dict(
+                type='Normalize',
+                mean=[123.675, 116.28, 103.53],
+                std=[58.395, 57.12, 57.375],
+                to_rgb=True),
+            dict(type='ImageToTensor', keys=['img']),
+            dict(type='ToTensor', keys=['gt_label']),
+            dict(type='Collect', keys=['img', 'gt_label'])
+        ]),
+    val=dict(
+        type='CustomDataset',
+        data_prefix='data/val',
+        pipeline=[
+            dict(type='LoadImageFromFile'),
+            dict(type='Resize', size=(256, -1), backend='pillow'),
+            dict(type='CenterCrop', crop_size=224),
+            dict(
+                type='Normalize',
+                mean=[123.675, 116.28, 103.53],
+                std=[58.395, 57.12, 57.375],
+                to_rgb=True),
+            dict(type='ImageToTensor', keys=['img']),
+            dict(type='Collect', keys=['img'])
+        ]),
+    test=dict(
+        type='CustomDataset',
+        data_prefix='data/val',
+        pipeline=[
+            dict(type='LoadImageFromFile'),
+            dict(type='Resize', size=(256, -1), backend='pillow'),
+            dict(type='CenterCrop', crop_size=224),
+            dict(
+                type='Normalize',
+                mean=[123.675, 116.28, 103.53],
+                std=[58.395, 57.12, 57.375],
+                to_rgb=True),
+            dict(type='ImageToTensor', keys=['img']),
+            dict(type='Collect', keys=['img'])
+        ]))
+evaluation = dict(interval=1, metric='accuracy')
+optimizer = dict(type='SGD', lr=0.005, momentum=0.9, weight_decay=4e-05)
+optimizer_config = dict(grad_clip=None)
+lr_config = dict(policy='step', gamma=0.98, step=1)
+runner = dict(type='EpochBasedRunner', max_epochs=20)
+checkpoint_config = dict(interval=10)
+log_config = dict(interval=10, hooks=[dict(type='TextLoggerHook')])
+dist_params = dict(backend='nccl')
+log_level = 'INFO'
+resume_from = None
+workflow = [('train', 1)]
+work_dir = './work_dirs/mobilenet-v2_8xb32_in1k'
+gpu_ids = range(0, 1)
+
+2023-02-05 00:15:50,030 - mmcls - INFO - Set random seed to 860572466, deterministic: False
+2023-02-05 00:15:50,101 - mmcls - INFO - initialize MobileNetV2 with init_cfg [{'type': 'Kaiming', 'layer': ['Conv2d']}, {'type': 'Constant', 'val': 1, 'layer': ['_BatchNorm', 'GroupNorm']}]
+2023-02-05 00:15:50,139 - mmcls - INFO - initialize LinearClsHead with init_cfg {'type': 'Normal', 'layer': 'Linear', 'std': 0.01}
+Name of parameter - Initialization information
+
+backbone.conv1.conv.weight - torch.Size([32, 3, 3, 3]): 
+Initialized by user-defined `init_weights` in ConvModule  
+
+backbone.conv1.bn.weight - torch.Size([32]): 
+The value is the same before and after calling `init_weights` of ImageClassifier  
+
+backbone.conv1.bn.bias - torch.Size([32]): 
+The value is the same before and after calling `init_weights` of ImageClassifier  
+
+backbone.layer1.0.conv.0.conv.weight - torch.Size([32, 1, 3, 3]): 
+KaimingInit: a=0, mode=fan_out, nonlinearity=relu, distribution =normal, bias=0 
+
+backbone.layer1.0.conv.0.bn.weight - torch.Size([32]): 
+The value is the same before and after calling `init_weights` of ImageClassifier  
+
+backbone.layer1.0.conv.0.bn.bias - torch.Size([32]): 
+The value is the same before and after calling `init_weights` of ImageClassifier  
+
+backbone.layer1.0.conv.1.conv.weight - torch.Size([16, 32, 1, 1]): 
+KaimingInit: a=0, mode=fan_out, nonlinearity=relu, distribution =normal, bias=0 
+
+backbone.layer1.0.conv.1.bn.weight - torch.Size([16]): 
+The value is the same before and after calling `init_weights` of ImageClassifier  
+
+backbone.layer1.0.conv.1.bn.bias - torch.Size([16]): 
+The value is the same before and after calling `init_weights` of ImageClassifier  
+
+backbone.layer2.0.conv.0.conv.weight - torch.Size([96, 16, 1, 1]): 
+KaimingInit: a=0, mode=fan_out, nonlinearity=relu, distribution =normal, bias=0 
+
+backbone.layer2.0.conv.0.bn.weight - torch.Size([96]): 
+The value is the same before and after calling `init_weights` of ImageClassifier  
+
+backbone.layer2.0.conv.0.bn.bias - torch.Size([96]): 
+The value is the same before and after calling `init_weights` of ImageClassifier  
+
+backbone.layer2.0.conv.1.conv.weight - torch.Size([96, 1, 3, 3]): 
+KaimingInit: a=0, mode=fan_out, nonlinearity=relu, distribution =normal, bias=0 
+
+backbone.layer2.0.conv.1.bn.weight - torch.Size([96]): 
+The value is the same before and after calling `init_weights` of ImageClassifier  
+
+backbone.layer2.0.conv.1.bn.bias - torch.Size([96]): 
+The value is the same before and after calling `init_weights` of ImageClassifier  
+
+backbone.layer2.0.conv.2.conv.weight - torch.Size([24, 96, 1, 1]): 
+KaimingInit: a=0, mode=fan_out, nonlinearity=relu, distribution =normal, bias=0 
+
+backbone.layer2.0.conv.2.bn.weight - torch.Size([24]): 
+The value is the same before and after calling `init_weights` of ImageClassifier  
+
+backbone.layer2.0.conv.2.bn.bias - torch.Size([24]): 
+The value is the same before and after calling `init_weights` of ImageClassifier  
+
+backbone.layer2.1.conv.0.conv.weight - torch.Size([144, 24, 1, 1]): 
+KaimingInit: a=0, mode=fan_out, nonlinearity=relu, distribution =normal, bias=0 
+
+backbone.layer2.1.conv.0.bn.weight - torch.Size([144]): 
+The value is the same before and after calling `init_weights` of ImageClassifier  
+
+backbone.layer2.1.conv.0.bn.bias - torch.Size([144]): 
+The value is the same before and after calling `init_weights` of ImageClassifier  
+
+backbone.layer2.1.conv.1.conv.weight - torch.Size([144, 1, 3, 3]): 
+KaimingInit: a=0, mode=fan_out, nonlinearity=relu, distribution =normal, bias=0 
+
+backbone.layer2.1.conv.1.bn.weight - torch.Size([144]): 
+The value is the same before and after calling `init_weights` of ImageClassifier  
+
+backbone.layer2.1.conv.1.bn.bias - torch.Size([144]): 
+The value is the same before and after calling `init_weights` of ImageClassifier  
+
+backbone.layer2.1.conv.2.conv.weight - torch.Size([24, 144, 1, 1]): 
+KaimingInit: a=0, mode=fan_out, nonlinearity=relu, distribution =normal, bias=0 
+
+backbone.layer2.1.conv.2.bn.weight - torch.Size([24]): 
+The value is the same before and after calling `init_weights` of ImageClassifier  
+
+backbone.layer2.1.conv.2.bn.bias - torch.Size([24]): 
+The value is the same before and after calling `init_weights` of ImageClassifier  
+
+backbone.layer3.0.conv.0.conv.weight - torch.Size([144, 24, 1, 1]): 
+KaimingInit: a=0, mode=fan_out, nonlinearity=relu, distribution =normal, bias=0 
+
+backbone.layer3.0.conv.0.bn.weight - torch.Size([144]): 
+The value is the same before and after calling `init_weights` of ImageClassifier  
+
+backbone.layer3.0.conv.0.bn.bias - torch.Size([144]): 
+The value is the same before and after calling `init_weights` of ImageClassifier  
+
+backbone.layer3.0.conv.1.conv.weight - torch.Size([144, 1, 3, 3]): 
+KaimingInit: a=0, mode=fan_out, nonlinearity=relu, distribution =normal, bias=0 
+
+backbone.layer3.0.conv.1.bn.weight - torch.Size([144]): 
+The value is the same before and after calling `init_weights` of ImageClassifier  
+
+backbone.layer3.0.conv.1.bn.bias - torch.Size([144]): 
+The value is the same before and after calling `init_weights` of ImageClassifier  
+
+backbone.layer3.0.conv.2.conv.weight - torch.Size([32, 144, 1, 1]): 
+KaimingInit: a=0, mode=fan_out, nonlinearity=relu, distribution =normal, bias=0 
+
+backbone.layer3.0.conv.2.bn.weight - torch.Size([32]): 
+The value is the same before and after calling `init_weights` of ImageClassifier  
+
+backbone.layer3.0.conv.2.bn.bias - torch.Size([32]): 
+The value is the same before and after calling `init_weights` of ImageClassifier  
+
+backbone.layer3.1.conv.0.conv.weight - torch.Size([192, 32, 1, 1]): 
+KaimingInit: a=0, mode=fan_out, nonlinearity=relu, distribution =normal, bias=0 
+
+backbone.layer3.1.conv.0.bn.weight - torch.Size([192]): 
+The value is the same before and after calling `init_weights` of ImageClassifier  
+
+backbone.layer3.1.conv.0.bn.bias - torch.Size([192]): 
+The value is the same before and after calling `init_weights` of ImageClassifier  
+
+backbone.layer3.1.conv.1.conv.weight - torch.Size([192, 1, 3, 3]): 
+KaimingInit: a=0, mode=fan_out, nonlinearity=relu, distribution =normal, bias=0 
+
+backbone.layer3.1.conv.1.bn.weight - torch.Size([192]): 
+The value is the same before and after calling `init_weights` of ImageClassifier  
+
+backbone.layer3.1.conv.1.bn.bias - torch.Size([192]): 
+The value is the same before and after calling `init_weights` of ImageClassifier  
+
+backbone.layer3.1.conv.2.conv.weight - torch.Size([32, 192, 1, 1]): 
+KaimingInit: a=0, mode=fan_out, nonlinearity=relu, distribution =normal, bias=0 
+
+backbone.layer3.1.conv.2.bn.weight - torch.Size([32]): 
+The value is the same before and after calling `init_weights` of ImageClassifier  
+
+backbone.layer3.1.conv.2.bn.bias - torch.Size([32]): 
+The value is the same before and after calling `init_weights` of ImageClassifier  
+
+backbone.layer3.2.conv.0.conv.weight - torch.Size([192, 32, 1, 1]): 
+KaimingInit: a=0, mode=fan_out, nonlinearity=relu, distribution =normal, bias=0 
+
+backbone.layer3.2.conv.0.bn.weight - torch.Size([192]): 
+The value is the same before and after calling `init_weights` of ImageClassifier  
+
+backbone.layer3.2.conv.0.bn.bias - torch.Size([192]): 
+The value is the same before and after calling `init_weights` of ImageClassifier  
+
+backbone.layer3.2.conv.1.conv.weight - torch.Size([192, 1, 3, 3]): 
+KaimingInit: a=0, mode=fan_out, nonlinearity=relu, distribution =normal, bias=0 
+
+backbone.layer3.2.conv.1.bn.weight - torch.Size([192]): 
+The value is the same before and after calling `init_weights` of ImageClassifier  
+
+backbone.layer3.2.conv.1.bn.bias - torch.Size([192]): 
+The value is the same before and after calling `init_weights` of ImageClassifier  
+
+backbone.layer3.2.conv.2.conv.weight - torch.Size([32, 192, 1, 1]): 
+KaimingInit: a=0, mode=fan_out, nonlinearity=relu, distribution =normal, bias=0 
+
+backbone.layer3.2.conv.2.bn.weight - torch.Size([32]): 
+The value is the same before and after calling `init_weights` of ImageClassifier  
+
+backbone.layer3.2.conv.2.bn.bias - torch.Size([32]): 
+The value is the same before and after calling `init_weights` of ImageClassifier  
+
+backbone.layer4.0.conv.0.conv.weight - torch.Size([192, 32, 1, 1]): 
+KaimingInit: a=0, mode=fan_out, nonlinearity=relu, distribution =normal, bias=0 
+
+backbone.layer4.0.conv.0.bn.weight - torch.Size([192]): 
+The value is the same before and after calling `init_weights` of ImageClassifier  
+
+backbone.layer4.0.conv.0.bn.bias - torch.Size([192]): 
+The value is the same before and after calling `init_weights` of ImageClassifier  
+
+backbone.layer4.0.conv.1.conv.weight - torch.Size([192, 1, 3, 3]): 
+KaimingInit: a=0, mode=fan_out, nonlinearity=relu, distribution =normal, bias=0 
+
+backbone.layer4.0.conv.1.bn.weight - torch.Size([192]): 
+The value is the same before and after calling `init_weights` of ImageClassifier  
+
+backbone.layer4.0.conv.1.bn.bias - torch.Size([192]): 
+The value is the same before and after calling `init_weights` of ImageClassifier  
+
+backbone.layer4.0.conv.2.conv.weight - torch.Size([64, 192, 1, 1]): 
+KaimingInit: a=0, mode=fan_out, nonlinearity=relu, distribution =normal, bias=0 
+
+backbone.layer4.0.conv.2.bn.weight - torch.Size([64]): 
+The value is the same before and after calling `init_weights` of ImageClassifier  
+
+backbone.layer4.0.conv.2.bn.bias - torch.Size([64]): 
+The value is the same before and after calling `init_weights` of ImageClassifier  
+
+backbone.layer4.1.conv.0.conv.weight - torch.Size([384, 64, 1, 1]): 
+KaimingInit: a=0, mode=fan_out, nonlinearity=relu, distribution =normal, bias=0 
+
+backbone.layer4.1.conv.0.bn.weight - torch.Size([384]): 
+The value is the same before and after calling `init_weights` of ImageClassifier  
+
+backbone.layer4.1.conv.0.bn.bias - torch.Size([384]): 
+The value is the same before and after calling `init_weights` of ImageClassifier  
+
+backbone.layer4.1.conv.1.conv.weight - torch.Size([384, 1, 3, 3]): 
+KaimingInit: a=0, mode=fan_out, nonlinearity=relu, distribution =normal, bias=0 
+
+backbone.layer4.1.conv.1.bn.weight - torch.Size([384]): 
+The value is the same before and after calling `init_weights` of ImageClassifier  
+
+backbone.layer4.1.conv.1.bn.bias - torch.Size([384]): 
+The value is the same before and after calling `init_weights` of ImageClassifier  
+
+backbone.layer4.1.conv.2.conv.weight - torch.Size([64, 384, 1, 1]): 
+KaimingInit: a=0, mode=fan_out, nonlinearity=relu, distribution =normal, bias=0 
+
+backbone.layer4.1.conv.2.bn.weight - torch.Size([64]): 
+The value is the same before and after calling `init_weights` of ImageClassifier  
+
+backbone.layer4.1.conv.2.bn.bias - torch.Size([64]): 
+The value is the same before and after calling `init_weights` of ImageClassifier  
+
+backbone.layer4.2.conv.0.conv.weight - torch.Size([384, 64, 1, 1]): 
+KaimingInit: a=0, mode=fan_out, nonlinearity=relu, distribution =normal, bias=0 
+
+backbone.layer4.2.conv.0.bn.weight - torch.Size([384]): 
+The value is the same before and after calling `init_weights` of ImageClassifier  
+
+backbone.layer4.2.conv.0.bn.bias - torch.Size([384]): 
+The value is the same before and after calling `init_weights` of ImageClassifier  
+
+backbone.layer4.2.conv.1.conv.weight - torch.Size([384, 1, 3, 3]): 
+KaimingInit: a=0, mode=fan_out, nonlinearity=relu, distribution =normal, bias=0 
+
+backbone.layer4.2.conv.1.bn.weight - torch.Size([384]): 
+The value is the same before and after calling `init_weights` of ImageClassifier  
+
+backbone.layer4.2.conv.1.bn.bias - torch.Size([384]): 
+The value is the same before and after calling `init_weights` of ImageClassifier  
+
+backbone.layer4.2.conv.2.conv.weight - torch.Size([64, 384, 1, 1]): 
+KaimingInit: a=0, mode=fan_out, nonlinearity=relu, distribution =normal, bias=0 
+
+backbone.layer4.2.conv.2.bn.weight - torch.Size([64]): 
+The value is the same before and after calling `init_weights` of ImageClassifier  
+
+backbone.layer4.2.conv.2.bn.bias - torch.Size([64]): 
+The value is the same before and after calling `init_weights` of ImageClassifier  
+
+backbone.layer4.3.conv.0.conv.weight - torch.Size([384, 64, 1, 1]): 
+KaimingInit: a=0, mode=fan_out, nonlinearity=relu, distribution =normal, bias=0 
+
+backbone.layer4.3.conv.0.bn.weight - torch.Size([384]): 
+The value is the same before and after calling `init_weights` of ImageClassifier  
+
+backbone.layer4.3.conv.0.bn.bias - torch.Size([384]): 
+The value is the same before and after calling `init_weights` of ImageClassifier  
+
+backbone.layer4.3.conv.1.conv.weight - torch.Size([384, 1, 3, 3]): 
+KaimingInit: a=0, mode=fan_out, nonlinearity=relu, distribution =normal, bias=0 
+
+backbone.layer4.3.conv.1.bn.weight - torch.Size([384]): 
+The value is the same before and after calling `init_weights` of ImageClassifier  
+
+backbone.layer4.3.conv.1.bn.bias - torch.Size([384]): 
+The value is the same before and after calling `init_weights` of ImageClassifier  
+
+backbone.layer4.3.conv.2.conv.weight - torch.Size([64, 384, 1, 1]): 
+KaimingInit: a=0, mode=fan_out, nonlinearity=relu, distribution =normal, bias=0 
+
+backbone.layer4.3.conv.2.bn.weight - torch.Size([64]): 
+The value is the same before and after calling `init_weights` of ImageClassifier  
+
+backbone.layer4.3.conv.2.bn.bias - torch.Size([64]): 
+The value is the same before and after calling `init_weights` of ImageClassifier  
+
+backbone.layer5.0.conv.0.conv.weight - torch.Size([384, 64, 1, 1]): 
+KaimingInit: a=0, mode=fan_out, nonlinearity=relu, distribution =normal, bias=0 
+
+backbone.layer5.0.conv.0.bn.weight - torch.Size([384]): 
+The value is the same before and after calling `init_weights` of ImageClassifier  
+
+backbone.layer5.0.conv.0.bn.bias - torch.Size([384]): 
+The value is the same before and after calling `init_weights` of ImageClassifier  
+
+backbone.layer5.0.conv.1.conv.weight - torch.Size([384, 1, 3, 3]): 
+KaimingInit: a=0, mode=fan_out, nonlinearity=relu, distribution =normal, bias=0 
+
+backbone.layer5.0.conv.1.bn.weight - torch.Size([384]): 
+The value is the same before and after calling `init_weights` of ImageClassifier  
+
+backbone.layer5.0.conv.1.bn.bias - torch.Size([384]): 
+The value is the same before and after calling `init_weights` of ImageClassifier  
+
+backbone.layer5.0.conv.2.conv.weight - torch.Size([96, 384, 1, 1]): 
+KaimingInit: a=0, mode=fan_out, nonlinearity=relu, distribution =normal, bias=0 
+
+backbone.layer5.0.conv.2.bn.weight - torch.Size([96]): 
+The value is the same before and after calling `init_weights` of ImageClassifier  
+
+backbone.layer5.0.conv.2.bn.bias - torch.Size([96]): 
+The value is the same before and after calling `init_weights` of ImageClassifier  
+
+backbone.layer5.1.conv.0.conv.weight - torch.Size([576, 96, 1, 1]): 
+KaimingInit: a=0, mode=fan_out, nonlinearity=relu, distribution =normal, bias=0 
+
+backbone.layer5.1.conv.0.bn.weight - torch.Size([576]): 
+The value is the same before and after calling `init_weights` of ImageClassifier  
+
+backbone.layer5.1.conv.0.bn.bias - torch.Size([576]): 
+The value is the same before and after calling `init_weights` of ImageClassifier  
+
+backbone.layer5.1.conv.1.conv.weight - torch.Size([576, 1, 3, 3]): 
+KaimingInit: a=0, mode=fan_out, nonlinearity=relu, distribution =normal, bias=0 
+
+backbone.layer5.1.conv.1.bn.weight - torch.Size([576]): 
+The value is the same before and after calling `init_weights` of ImageClassifier  
+
+backbone.layer5.1.conv.1.bn.bias - torch.Size([576]): 
+The value is the same before and after calling `init_weights` of ImageClassifier  
+
+backbone.layer5.1.conv.2.conv.weight - torch.Size([96, 576, 1, 1]): 
+KaimingInit: a=0, mode=fan_out, nonlinearity=relu, distribution =normal, bias=0 
+
+backbone.layer5.1.conv.2.bn.weight - torch.Size([96]): 
+The value is the same before and after calling `init_weights` of ImageClassifier  
+
+backbone.layer5.1.conv.2.bn.bias - torch.Size([96]): 
+The value is the same before and after calling `init_weights` of ImageClassifier  
+
+backbone.layer5.2.conv.0.conv.weight - torch.Size([576, 96, 1, 1]): 
+KaimingInit: a=0, mode=fan_out, nonlinearity=relu, distribution =normal, bias=0 
+
+backbone.layer5.2.conv.0.bn.weight - torch.Size([576]): 
+The value is the same before and after calling `init_weights` of ImageClassifier  
+
+backbone.layer5.2.conv.0.bn.bias - torch.Size([576]): 
+The value is the same before and after calling `init_weights` of ImageClassifier  
+
+backbone.layer5.2.conv.1.conv.weight - torch.Size([576, 1, 3, 3]): 
+KaimingInit: a=0, mode=fan_out, nonlinearity=relu, distribution =normal, bias=0 
+
+backbone.layer5.2.conv.1.bn.weight - torch.Size([576]): 
+The value is the same before and after calling `init_weights` of ImageClassifier  
+
+backbone.layer5.2.conv.1.bn.bias - torch.Size([576]): 
+The value is the same before and after calling `init_weights` of ImageClassifier  
+
+backbone.layer5.2.conv.2.conv.weight - torch.Size([96, 576, 1, 1]): 
+KaimingInit: a=0, mode=fan_out, nonlinearity=relu, distribution =normal, bias=0 
+
+backbone.layer5.2.conv.2.bn.weight - torch.Size([96]): 
+The value is the same before and after calling `init_weights` of ImageClassifier  
+
+backbone.layer5.2.conv.2.bn.bias - torch.Size([96]): 
+The value is the same before and after calling `init_weights` of ImageClassifier  
+
+backbone.layer6.0.conv.0.conv.weight - torch.Size([576, 96, 1, 1]): 
+KaimingInit: a=0, mode=fan_out, nonlinearity=relu, distribution =normal, bias=0 
+
+backbone.layer6.0.conv.0.bn.weight - torch.Size([576]): 
+The value is the same before and after calling `init_weights` of ImageClassifier  
+
+backbone.layer6.0.conv.0.bn.bias - torch.Size([576]): 
+The value is the same before and after calling `init_weights` of ImageClassifier  
+
+backbone.layer6.0.conv.1.conv.weight - torch.Size([576, 1, 3, 3]): 
+KaimingInit: a=0, mode=fan_out, nonlinearity=relu, distribution =normal, bias=0 
+
+backbone.layer6.0.conv.1.bn.weight - torch.Size([576]): 
+The value is the same before and after calling `init_weights` of ImageClassifier  
+
+backbone.layer6.0.conv.1.bn.bias - torch.Size([576]): 
+The value is the same before and after calling `init_weights` of ImageClassifier  
+
+backbone.layer6.0.conv.2.conv.weight - torch.Size([160, 576, 1, 1]): 
+KaimingInit: a=0, mode=fan_out, nonlinearity=relu, distribution =normal, bias=0 
+
+backbone.layer6.0.conv.2.bn.weight - torch.Size([160]): 
+The value is the same before and after calling `init_weights` of ImageClassifier  
+
+backbone.layer6.0.conv.2.bn.bias - torch.Size([160]): 
+The value is the same before and after calling `init_weights` of ImageClassifier  
+
+backbone.layer6.1.conv.0.conv.weight - torch.Size([960, 160, 1, 1]): 
+KaimingInit: a=0, mode=fan_out, nonlinearity=relu, distribution =normal, bias=0 
+
+backbone.layer6.1.conv.0.bn.weight - torch.Size([960]): 
+The value is the same before and after calling `init_weights` of ImageClassifier  
+
+backbone.layer6.1.conv.0.bn.bias - torch.Size([960]): 
+The value is the same before and after calling `init_weights` of ImageClassifier  
+
+backbone.layer6.1.conv.1.conv.weight - torch.Size([960, 1, 3, 3]): 
+KaimingInit: a=0, mode=fan_out, nonlinearity=relu, distribution =normal, bias=0 
+
+backbone.layer6.1.conv.1.bn.weight - torch.Size([960]): 
+The value is the same before and after calling `init_weights` of ImageClassifier  
+
+backbone.layer6.1.conv.1.bn.bias - torch.Size([960]): 
+The value is the same before and after calling `init_weights` of ImageClassifier  
+
+backbone.layer6.1.conv.2.conv.weight - torch.Size([160, 960, 1, 1]): 
+KaimingInit: a=0, mode=fan_out, nonlinearity=relu, distribution =normal, bias=0 
+
+backbone.layer6.1.conv.2.bn.weight - torch.Size([160]): 
+The value is the same before and after calling `init_weights` of ImageClassifier  
+
+backbone.layer6.1.conv.2.bn.bias - torch.Size([160]): 
+The value is the same before and after calling `init_weights` of ImageClassifier  
+
+backbone.layer6.2.conv.0.conv.weight - torch.Size([960, 160, 1, 1]): 
+KaimingInit: a=0, mode=fan_out, nonlinearity=relu, distribution =normal, bias=0 
+
+backbone.layer6.2.conv.0.bn.weight - torch.Size([960]): 
+The value is the same before and after calling `init_weights` of ImageClassifier  
+
+backbone.layer6.2.conv.0.bn.bias - torch.Size([960]): 
+The value is the same before and after calling `init_weights` of ImageClassifier  
+
+backbone.layer6.2.conv.1.conv.weight - torch.Size([960, 1, 3, 3]): 
+KaimingInit: a=0, mode=fan_out, nonlinearity=relu, distribution =normal, bias=0 
+
+backbone.layer6.2.conv.1.bn.weight - torch.Size([960]): 
+The value is the same before and after calling `init_weights` of ImageClassifier  
+
+backbone.layer6.2.conv.1.bn.bias - torch.Size([960]): 
+The value is the same before and after calling `init_weights` of ImageClassifier  
+
+backbone.layer6.2.conv.2.conv.weight - torch.Size([160, 960, 1, 1]): 
+KaimingInit: a=0, mode=fan_out, nonlinearity=relu, distribution =normal, bias=0 
+
+backbone.layer6.2.conv.2.bn.weight - torch.Size([160]): 
+The value is the same before and after calling `init_weights` of ImageClassifier  
+
+backbone.layer6.2.conv.2.bn.bias - torch.Size([160]): 
+The value is the same before and after calling `init_weights` of ImageClassifier  
+
+backbone.layer7.0.conv.0.conv.weight - torch.Size([960, 160, 1, 1]): 
+KaimingInit: a=0, mode=fan_out, nonlinearity=relu, distribution =normal, bias=0 
+
+backbone.layer7.0.conv.0.bn.weight - torch.Size([960]): 
+The value is the same before and after calling `init_weights` of ImageClassifier  
+
+backbone.layer7.0.conv.0.bn.bias - torch.Size([960]): 
+The value is the same before and after calling `init_weights` of ImageClassifier  
+
+backbone.layer7.0.conv.1.conv.weight - torch.Size([960, 1, 3, 3]): 
+KaimingInit: a=0, mode=fan_out, nonlinearity=relu, distribution =normal, bias=0 
+
+backbone.layer7.0.conv.1.bn.weight - torch.Size([960]): 
+The value is the same before and after calling `init_weights` of ImageClassifier  
+
+backbone.layer7.0.conv.1.bn.bias - torch.Size([960]): 
+The value is the same before and after calling `init_weights` of ImageClassifier  
+
+backbone.layer7.0.conv.2.conv.weight - torch.Size([320, 960, 1, 1]): 
+KaimingInit: a=0, mode=fan_out, nonlinearity=relu, distribution =normal, bias=0 
+
+backbone.layer7.0.conv.2.bn.weight - torch.Size([320]): 
+The value is the same before and after calling `init_weights` of ImageClassifier  
+
+backbone.layer7.0.conv.2.bn.bias - torch.Size([320]): 
+The value is the same before and after calling `init_weights` of ImageClassifier  
+
+backbone.conv2.conv.weight - torch.Size([1280, 320, 1, 1]): 
+Initialized by user-defined `init_weights` in ConvModule  
+
+backbone.conv2.bn.weight - torch.Size([1280]): 
+The value is the same before and after calling `init_weights` of ImageClassifier  
+
+backbone.conv2.bn.bias - torch.Size([1280]): 
+The value is the same before and after calling `init_weights` of ImageClassifier  
+
+head.fc.weight - torch.Size([5, 1280]): 
+NormalInit: mean=0, std=0.01, bias=0 
+
+head.fc.bias - torch.Size([5]): 
+NormalInit: mean=0, std=0.01, bias=0 
+2023-02-05 00:15:54,960 - mmcls - INFO - load checkpoint from local path: mobilenet_v2_batch256_imagenet_20200708-3b2dc3af.pth
+2023-02-05 00:15:55,004 - mmcls - WARNING - The model and loaded state dict do not match exactly
+
+size mismatch for head.fc.weight: copying a param with shape torch.Size([1000, 1280]) from checkpoint, the shape in current model is torch.Size([5, 1280]).
+size mismatch for head.fc.bias: copying a param with shape torch.Size([1000]) from checkpoint, the shape in current model is torch.Size([5]).
+2023-02-05 00:15:55,005 - mmcls - INFO - Start running, host: root@autodl-container-88b111a1ac-9e18945e, work_dir: /root/mmcls/work_dirs/mobilenet-v2_8xb32_in1k
+2023-02-05 00:15:55,005 - mmcls - INFO - Hooks will be executed in the following order:
+before_run:
+(VERY_HIGH   ) StepLrUpdaterHook                  
+(NORMAL      ) CheckpointHook                     
+(LOW         ) EvalHook                           
+(VERY_LOW    ) TextLoggerHook                     
+ -------------------- 
+before_train_epoch:
+(VERY_HIGH   ) StepLrUpdaterHook                  
+(LOW         ) IterTimerHook                      
+(LOW         ) EvalHook                           
+(VERY_LOW    ) TextLoggerHook                     
+ -------------------- 
+before_train_iter:
+(VERY_HIGH   ) StepLrUpdaterHook                  
+(LOW         ) IterTimerHook                      
+(LOW         ) EvalHook                           
+ -------------------- 
+after_train_iter:
+(ABOVE_NORMAL) OptimizerHook                      
+(NORMAL      ) CheckpointHook                     
+(LOW         ) IterTimerHook                      
+(LOW         ) EvalHook                           
+(VERY_LOW    ) TextLoggerHook                     
+ -------------------- 
+after_train_epoch:
+(NORMAL      ) CheckpointHook                     
+(LOW         ) EvalHook                           
+(VERY_LOW    ) TextLoggerHook                     
+ -------------------- 
+before_val_epoch:
+(LOW         ) IterTimerHook                      
+(VERY_LOW    ) TextLoggerHook                     
+ -------------------- 
+before_val_iter:
+(LOW         ) IterTimerHook                      
+ -------------------- 
+after_val_iter:
+(LOW         ) IterTimerHook                      
+ -------------------- 
+after_val_epoch:
+(VERY_LOW    ) TextLoggerHook                     
+ -------------------- 
+after_run:
+(VERY_LOW    ) TextLoggerHook                     
+ -------------------- 
+2023-02-05 00:15:55,006 - mmcls - INFO - workflow: [('train', 1)], max: 20 epochs
+2023-02-05 00:15:55,006 - mmcls - INFO - Checkpoints will be saved to /root/mmcls/work_dirs/mobilenet-v2_8xb32_in1k by HardDiskBackend.
+2023-02-05 00:15:58,550 - mmcls - INFO - Epoch [1][10/72]	lr: 5.000e-03, eta: 0:08:22, time: 0.351, data_time: 0.244, memory: 2455, loss: 1.2018
+2023-02-05 00:15:59,489 - mmcls - INFO - Epoch [1][20/72]	lr: 5.000e-03, eta: 0:05:15, time: 0.093, data_time: 0.003, memory: 2455, loss: 0.4582
+2023-02-05 00:16:00,433 - mmcls - INFO - Epoch [1][30/72]	lr: 5.000e-03, eta: 0:04:13, time: 0.094, data_time: 0.004, memory: 2455, loss: 0.2993
+2023-02-05 00:16:01,389 - mmcls - INFO - Epoch [1][40/72]	lr: 5.000e-03, eta: 0:03:42, time: 0.096, data_time: 0.004, memory: 2455, loss: 0.3229
+2023-02-05 00:16:02,322 - mmcls - INFO - Epoch [1][50/72]	lr: 5.000e-03, eta: 0:03:22, time: 0.093, data_time: 0.011, memory: 2455, loss: 0.3812
+2023-02-05 00:16:03,404 - mmcls - INFO - Epoch [1][60/72]	lr: 5.000e-03, eta: 0:03:12, time: 0.108, data_time: 0.028, memory: 2455, loss: 0.6620
+2023-02-05 00:16:04,369 - mmcls - INFO - Epoch [1][70/72]	lr: 5.000e-03, eta: 0:03:02, time: 0.097, data_time: 0.013, memory: 2455, loss: 0.5252
+2023-02-05 00:16:06,461 - mmcls - INFO - Epoch(val) [1][18]	accuracy_top-1: 86.8881, accuracy_top-5: 100.0000
+2023-02-05 00:16:09,749 - mmcls - INFO - Epoch [2][10/72]	lr: 4.900e-03, eta: 0:03:28, time: 0.325, data_time: 0.244, memory: 2455, loss: 0.6061
+2023-02-05 00:16:10,740 - mmcls - INFO - Epoch [2][20/72]	lr: 4.900e-03, eta: 0:03:18, time: 0.099, data_time: 0.024, memory: 2455, loss: 0.7823
+2023-02-05 00:16:11,711 - mmcls - INFO - Epoch [2][30/72]	lr: 4.900e-03, eta: 0:03:10, time: 0.096, data_time: 0.007, memory: 2455, loss: 0.4336
+2023-02-05 00:16:12,682 - mmcls - INFO - Epoch [2][40/72]	lr: 4.900e-03, eta: 0:03:03, time: 0.097, data_time: 0.004, memory: 2455, loss: 0.4473
+2023-02-05 00:16:13,628 - mmcls - INFO - Epoch [2][50/72]	lr: 4.900e-03, eta: 0:02:57, time: 0.095, data_time: 0.004, memory: 2455, loss: 0.4156
+2023-02-05 00:16:14,573 - mmcls - INFO - Epoch [2][60/72]	lr: 4.900e-03, eta: 0:02:52, time: 0.095, data_time: 0.004, memory: 2455, loss: 0.4827
+2023-02-05 00:16:15,525 - mmcls - INFO - Epoch [2][70/72]	lr: 4.900e-03, eta: 0:02:47, time: 0.094, data_time: 0.003, memory: 2455, loss: 0.4729
+2023-02-05 00:16:17,548 - mmcls - INFO - Epoch(val) [2][18]	accuracy_top-1: 88.8112, accuracy_top-5: 100.0000
+2023-02-05 00:16:20,720 - mmcls - INFO - Epoch [3][10/72]	lr: 4.802e-03, eta: 0:02:59, time: 0.314, data_time: 0.227, memory: 2455, loss: 0.5514
+2023-02-05 00:16:21,731 - mmcls - INFO - Epoch [3][20/72]	lr: 4.802e-03, eta: 0:02:55, time: 0.101, data_time: 0.017, memory: 2455, loss: 0.5039
+2023-02-05 00:16:22,694 - mmcls - INFO - Epoch [3][30/72]	lr: 4.802e-03, eta: 0:02:50, time: 0.096, data_time: 0.003, memory: 2455, loss: 0.3706
+2023-02-05 00:16:23,650 - mmcls - INFO - Epoch [3][40/72]	lr: 4.802e-03, eta: 0:02:46, time: 0.095, data_time: 0.003, memory: 2455, loss: 0.3904
+2023-02-05 00:16:24,598 - mmcls - INFO - Epoch [3][50/72]	lr: 4.802e-03, eta: 0:02:42, time: 0.095, data_time: 0.003, memory: 2455, loss: 0.2955
+2023-02-05 00:16:25,547 - mmcls - INFO - Epoch [3][60/72]	lr: 4.802e-03, eta: 0:02:39, time: 0.095, data_time: 0.003, memory: 2455, loss: 0.3737
+2023-02-05 00:16:26,506 - mmcls - INFO - Epoch [3][70/72]	lr: 4.802e-03, eta: 0:02:36, time: 0.095, data_time: 0.005, memory: 2455, loss: 0.3081
+2023-02-05 00:16:28,475 - mmcls - INFO - Epoch(val) [3][18]	accuracy_top-1: 91.7832, accuracy_top-5: 100.0000
+2023-02-05 00:16:31,667 - mmcls - INFO - Epoch [4][10/72]	lr: 4.706e-03, eta: 0:02:43, time: 0.316, data_time: 0.225, memory: 2455, loss: 0.2720
+2023-02-05 00:16:32,635 - mmcls - INFO - Epoch [4][20/72]	lr: 4.706e-03, eta: 0:02:40, time: 0.096, data_time: 0.004, memory: 2455, loss: 0.2488
+2023-02-05 00:16:33,601 - mmcls - INFO - Epoch [4][30/72]	lr: 4.706e-03, eta: 0:02:37, time: 0.098, data_time: 0.005, memory: 2455, loss: 0.3865
+2023-02-05 00:16:34,538 - mmcls - INFO - Epoch [4][40/72]	lr: 4.706e-03, eta: 0:02:33, time: 0.092, data_time: 0.006, memory: 2455, loss: 0.3243
+2023-02-05 00:16:35,500 - mmcls - INFO - Epoch [4][50/72]	lr: 4.706e-03, eta: 0:02:31, time: 0.097, data_time: 0.004, memory: 2455, loss: 0.2048
+2023-02-05 00:16:36,447 - mmcls - INFO - Epoch [4][60/72]	lr: 4.706e-03, eta: 0:02:28, time: 0.094, data_time: 0.009, memory: 2455, loss: 0.3330
+2023-02-05 00:16:37,461 - mmcls - INFO - Epoch [4][70/72]	lr: 4.706e-03, eta: 0:02:26, time: 0.102, data_time: 0.019, memory: 2455, loss: 0.2999
+2023-02-05 00:16:39,430 - mmcls - INFO - Epoch(val) [4][18]	accuracy_top-1: 91.4336, accuracy_top-5: 100.0000
+2023-02-05 00:16:42,694 - mmcls - INFO - Epoch [5][10/72]	lr: 4.612e-03, eta: 0:02:31, time: 0.323, data_time: 0.243, memory: 2455, loss: 0.2928
+2023-02-05 00:16:43,685 - mmcls - INFO - Epoch [5][20/72]	lr: 4.612e-03, eta: 0:02:28, time: 0.099, data_time: 0.019, memory: 2455, loss: 0.2641
+2023-02-05 00:16:44,740 - mmcls - INFO - Epoch [5][30/72]	lr: 4.612e-03, eta: 0:02:26, time: 0.106, data_time: 0.025, memory: 2455, loss: 0.3143
+2023-02-05 00:16:45,705 - mmcls - INFO - Epoch [5][40/72]	lr: 4.612e-03, eta: 0:02:23, time: 0.096, data_time: 0.016, memory: 2455, loss: 0.2340
+2023-02-05 00:16:46,668 - mmcls - INFO - Epoch [5][50/72]	lr: 4.612e-03, eta: 0:02:21, time: 0.096, data_time: 0.015, memory: 2455, loss: 0.3194
+2023-02-05 00:16:47,644 - mmcls - INFO - Epoch [5][60/72]	lr: 4.612e-03, eta: 0:02:19, time: 0.097, data_time: 0.019, memory: 2455, loss: 0.2688
+2023-02-05 00:16:48,628 - mmcls - INFO - Epoch [5][70/72]	lr: 4.612e-03, eta: 0:02:17, time: 0.098, data_time: 0.017, memory: 2455, loss: 0.2438
+2023-02-05 00:16:50,619 - mmcls - INFO - Epoch(val) [5][18]	accuracy_top-1: 93.7063, accuracy_top-5: 100.0000
+2023-02-05 00:16:53,824 - mmcls - INFO - Epoch [6][10/72]	lr: 4.520e-03, eta: 0:02:20, time: 0.317, data_time: 0.235, memory: 2455, loss: 0.2787
+2023-02-05 00:16:54,815 - mmcls - INFO - Epoch [6][20/72]	lr: 4.520e-03, eta: 0:02:18, time: 0.099, data_time: 0.021, memory: 2455, loss: 0.3242
+2023-02-05 00:16:55,775 - mmcls - INFO - Epoch [6][30/72]	lr: 4.520e-03, eta: 0:02:15, time: 0.096, data_time: 0.019, memory: 2455, loss: 0.2612
+2023-02-05 00:16:56,796 - mmcls - INFO - Epoch [6][40/72]	lr: 4.520e-03, eta: 0:02:13, time: 0.102, data_time: 0.026, memory: 2455, loss: 0.2657
+2023-02-05 00:16:57,737 - mmcls - INFO - Epoch [6][50/72]	lr: 4.520e-03, eta: 0:02:11, time: 0.094, data_time: 0.015, memory: 2455, loss: 0.2595
+2023-02-05 00:16:58,674 - mmcls - INFO - Epoch [6][60/72]	lr: 4.520e-03, eta: 0:02:09, time: 0.094, data_time: 0.010, memory: 2455, loss: 0.3282
+2023-02-05 00:16:59,690 - mmcls - INFO - Epoch [6][70/72]	lr: 4.520e-03, eta: 0:02:07, time: 0.101, data_time: 0.027, memory: 2455, loss: 0.2998
+2023-02-05 00:17:01,783 - mmcls - INFO - Epoch(val) [6][18]	accuracy_top-1: 92.4825, accuracy_top-5: 100.0000
+2023-02-05 00:17:05,098 - mmcls - INFO - Epoch [7][10/72]	lr: 4.429e-03, eta: 0:02:10, time: 0.328, data_time: 0.247, memory: 2455, loss: 0.2847
+2023-02-05 00:17:06,225 - mmcls - INFO - Epoch [7][20/72]	lr: 4.429e-03, eta: 0:02:08, time: 0.113, data_time: 0.035, memory: 2455, loss: 0.2063
+2023-02-05 00:17:07,230 - mmcls - INFO - Epoch [7][30/72]	lr: 4.429e-03, eta: 0:02:06, time: 0.101, data_time: 0.021, memory: 2455, loss: 0.2374
+2023-02-05 00:17:08,178 - mmcls - INFO - Epoch [7][40/72]	lr: 4.429e-03, eta: 0:02:04, time: 0.095, data_time: 0.010, memory: 2455, loss: 0.2828
+2023-02-05 00:17:09,147 - mmcls - INFO - Epoch [7][50/72]	lr: 4.429e-03, eta: 0:02:02, time: 0.097, data_time: 0.016, memory: 2455, loss: 0.2413
+2023-02-05 00:17:10,188 - mmcls - INFO - Epoch [7][60/72]	lr: 4.429e-03, eta: 0:02:00, time: 0.104, data_time: 0.032, memory: 2455, loss: 0.1964
+2023-02-05 00:17:11,163 - mmcls - INFO - Epoch [7][70/72]	lr: 4.429e-03, eta: 0:01:59, time: 0.097, data_time: 0.023, memory: 2455, loss: 0.2249
+2023-02-05 00:17:13,231 - mmcls - INFO - Epoch(val) [7][18]	accuracy_top-1: 94.4056, accuracy_top-5: 100.0000
+2023-02-05 00:17:16,431 - mmcls - INFO - Epoch [8][10/72]	lr: 4.341e-03, eta: 0:02:00, time: 0.317, data_time: 0.233, memory: 2455, loss: 0.3132
+2023-02-05 00:17:17,384 - mmcls - INFO - Epoch [8][20/72]	lr: 4.341e-03, eta: 0:01:58, time: 0.095, data_time: 0.011, memory: 2455, loss: 0.2322
+2023-02-05 00:17:18,326 - mmcls - INFO - Epoch [8][30/72]	lr: 4.341e-03, eta: 0:01:56, time: 0.094, data_time: 0.010, memory: 2455, loss: 0.2452
+2023-02-05 00:17:19,279 - mmcls - INFO - Epoch [8][40/72]	lr: 4.341e-03, eta: 0:01:54, time: 0.096, data_time: 0.018, memory: 2455, loss: 0.3292
+2023-02-05 00:17:20,283 - mmcls - INFO - Epoch [8][50/72]	lr: 4.341e-03, eta: 0:01:53, time: 0.100, data_time: 0.022, memory: 2455, loss: 0.2501
+2023-02-05 00:17:21,274 - mmcls - INFO - Epoch [8][60/72]	lr: 4.341e-03, eta: 0:01:51, time: 0.100, data_time: 0.020, memory: 2455, loss: 0.2827
+2023-02-05 00:17:22,246 - mmcls - INFO - Epoch [8][70/72]	lr: 4.341e-03, eta: 0:01:49, time: 0.097, data_time: 0.003, memory: 2455, loss: 0.2596
+2023-02-05 00:17:24,260 - mmcls - INFO - Epoch(val) [8][18]	accuracy_top-1: 93.3566, accuracy_top-5: 100.0000
+2023-02-05 00:17:27,458 - mmcls - INFO - Epoch [9][10/72]	lr: 4.254e-03, eta: 0:01:50, time: 0.317, data_time: 0.235, memory: 2455, loss: 0.2607
+2023-02-05 00:17:28,417 - mmcls - INFO - Epoch [9][20/72]	lr: 4.254e-03, eta: 0:01:48, time: 0.095, data_time: 0.003, memory: 2455, loss: 0.2050
+2023-02-05 00:17:29,372 - mmcls - INFO - Epoch [9][30/72]	lr: 4.254e-03, eta: 0:01:47, time: 0.095, data_time: 0.003, memory: 2455, loss: 0.1646
+2023-02-05 00:17:30,330 - mmcls - INFO - Epoch [9][40/72]	lr: 4.254e-03, eta: 0:01:45, time: 0.096, data_time: 0.007, memory: 2455, loss: 0.1213
+2023-02-05 00:17:31,305 - mmcls - INFO - Epoch [9][50/72]	lr: 4.254e-03, eta: 0:01:43, time: 0.098, data_time: 0.013, memory: 2455, loss: 0.2202
+2023-02-05 00:17:32,299 - mmcls - INFO - Epoch [9][60/72]	lr: 4.254e-03, eta: 0:01:42, time: 0.101, data_time: 0.018, memory: 2455, loss: 0.1632
+2023-02-05 00:17:33,310 - mmcls - INFO - Epoch [9][70/72]	lr: 4.254e-03, eta: 0:01:40, time: 0.099, data_time: 0.014, memory: 2455, loss: 0.2027
+2023-02-05 00:17:35,247 - mmcls - INFO - Epoch(val) [9][18]	accuracy_top-1: 94.0559, accuracy_top-5: 100.0000
+2023-02-05 00:17:38,481 - mmcls - INFO - Epoch [10][10/72]	lr: 4.169e-03, eta: 0:01:40, time: 0.321, data_time: 0.241, memory: 2455, loss: 0.2226
+2023-02-05 00:17:39,463 - mmcls - INFO - Epoch [10][20/72]	lr: 4.169e-03, eta: 0:01:39, time: 0.097, data_time: 0.018, memory: 2455, loss: 0.2162
+2023-02-05 00:17:40,460 - mmcls - INFO - Epoch [10][30/72]	lr: 4.169e-03, eta: 0:01:37, time: 0.100, data_time: 0.015, memory: 2455, loss: 0.3288
+2023-02-05 00:17:41,418 - mmcls - INFO - Epoch [10][40/72]	lr: 4.169e-03, eta: 0:01:36, time: 0.096, data_time: 0.012, memory: 2455, loss: 0.2261
+2023-02-05 00:17:42,400 - mmcls - INFO - Epoch [10][50/72]	lr: 4.169e-03, eta: 0:01:34, time: 0.099, data_time: 0.020, memory: 2455, loss: 0.2475
+2023-02-05 00:17:43,352 - mmcls - INFO - Epoch [10][60/72]	lr: 4.169e-03, eta: 0:01:32, time: 0.095, data_time: 0.008, memory: 2455, loss: 0.1743
+2023-02-05 00:17:44,301 - mmcls - INFO - Epoch [10][70/72]	lr: 4.169e-03, eta: 0:01:31, time: 0.095, data_time: 0.005, memory: 2455, loss: 0.2090
+2023-02-05 00:17:44,431 - mmcls - INFO - Saving checkpoint at 10 epochs
+2023-02-05 00:17:46,638 - mmcls - INFO - Epoch(val) [10][18]	accuracy_top-1: 93.3566, accuracy_top-5: 100.0000
+2023-02-05 00:17:49,876 - mmcls - INFO - Epoch [11][10/72]	lr: 4.085e-03, eta: 0:01:31, time: 0.320, data_time: 0.240, memory: 2455, loss: 0.1595
+2023-02-05 00:17:50,847 - mmcls - INFO - Epoch [11][20/72]	lr: 4.085e-03, eta: 0:01:29, time: 0.097, data_time: 0.016, memory: 2455, loss: 0.2435
+2023-02-05 00:17:51,794 - mmcls - INFO - Epoch [11][30/72]	lr: 4.085e-03, eta: 0:01:28, time: 0.095, data_time: 0.016, memory: 2455, loss: 0.2240
+2023-02-05 00:17:52,757 - mmcls - INFO - Epoch [11][40/72]	lr: 4.085e-03, eta: 0:01:26, time: 0.096, data_time: 0.012, memory: 2455, loss: 0.2437
+2023-02-05 00:17:53,713 - mmcls - INFO - Epoch [11][50/72]	lr: 4.085e-03, eta: 0:01:25, time: 0.096, data_time: 0.008, memory: 2455, loss: 0.1710
+2023-02-05 00:17:54,717 - mmcls - INFO - Epoch [11][60/72]	lr: 4.085e-03, eta: 0:01:23, time: 0.102, data_time: 0.019, memory: 2455, loss: 0.2172
+2023-02-05 00:17:55,717 - mmcls - INFO - Epoch [11][70/72]	lr: 4.085e-03, eta: 0:01:22, time: 0.099, data_time: 0.018, memory: 2455, loss: 0.2415
+2023-02-05 00:17:57,830 - mmcls - INFO - Epoch(val) [11][18]	accuracy_top-1: 94.0559, accuracy_top-5: 100.0000
+2023-02-05 00:18:01,000 - mmcls - INFO - Epoch [12][10/72]	lr: 4.004e-03, eta: 0:01:21, time: 0.313, data_time: 0.233, memory: 2455, loss: 0.2850
+2023-02-05 00:18:01,963 - mmcls - INFO - Epoch [12][20/72]	lr: 4.004e-03, eta: 0:01:20, time: 0.098, data_time: 0.018, memory: 2455, loss: 0.1967
+2023-02-05 00:18:02,917 - mmcls - INFO - Epoch [12][30/72]	lr: 4.004e-03, eta: 0:01:18, time: 0.094, data_time: 0.003, memory: 2455, loss: 0.2524
+2023-02-05 00:18:03,869 - mmcls - INFO - Epoch [12][40/72]	lr: 4.004e-03, eta: 0:01:17, time: 0.095, data_time: 0.015, memory: 2455, loss: 0.2187
+2023-02-05 00:18:04,903 - mmcls - INFO - Epoch [12][50/72]	lr: 4.004e-03, eta: 0:01:15, time: 0.104, data_time: 0.024, memory: 2455, loss: 0.1686
+2023-02-05 00:18:05,851 - mmcls - INFO - Epoch [12][60/72]	lr: 4.004e-03, eta: 0:01:14, time: 0.094, data_time: 0.016, memory: 2455, loss: 0.2219
+2023-02-05 00:18:06,800 - mmcls - INFO - Epoch [12][70/72]	lr: 4.004e-03, eta: 0:01:12, time: 0.095, data_time: 0.011, memory: 2455, loss: 0.2370
+2023-02-05 00:18:08,873 - mmcls - INFO - Epoch(val) [12][18]	accuracy_top-1: 94.2308, accuracy_top-5: 100.0000
+2023-02-05 00:18:12,060 - mmcls - INFO - Epoch [13][10/72]	lr: 3.924e-03, eta: 0:01:12, time: 0.316, data_time: 0.232, memory: 2455, loss: 0.1792
+2023-02-05 00:18:13,004 - mmcls - INFO - Epoch [13][20/72]	lr: 3.924e-03, eta: 0:01:10, time: 0.093, data_time: 0.002, memory: 2455, loss: 0.1565
+2023-02-05 00:18:13,938 - mmcls - INFO - Epoch [13][30/72]	lr: 3.924e-03, eta: 0:01:09, time: 0.093, data_time: 0.004, memory: 2455, loss: 0.1946
+2023-02-05 00:18:14,896 - mmcls - INFO - Epoch [13][40/72]	lr: 3.924e-03, eta: 0:01:08, time: 0.096, data_time: 0.004, memory: 2455, loss: 0.1327
+2023-02-05 00:18:15,839 - mmcls - INFO - Epoch [13][50/72]	lr: 3.924e-03, eta: 0:01:06, time: 0.094, data_time: 0.004, memory: 2455, loss: 0.1516
+2023-02-05 00:18:16,806 - mmcls - INFO - Epoch [13][60/72]	lr: 3.924e-03, eta: 0:01:05, time: 0.097, data_time: 0.006, memory: 2455, loss: 0.1158
+2023-02-05 00:18:17,757 - mmcls - INFO - Epoch [13][70/72]	lr: 3.924e-03, eta: 0:01:03, time: 0.094, data_time: 0.003, memory: 2455, loss: 0.1767
+2023-02-05 00:18:19,846 - mmcls - INFO - Epoch(val) [13][18]	accuracy_top-1: 94.9301, accuracy_top-5: 100.0000
+2023-02-05 00:18:23,106 - mmcls - INFO - Epoch [14][10/72]	lr: 3.845e-03, eta: 0:01:03, time: 0.323, data_time: 0.244, memory: 2455, loss: 0.1673
+2023-02-05 00:18:24,049 - mmcls - INFO - Epoch [14][20/72]	lr: 3.845e-03, eta: 0:01:01, time: 0.094, data_time: 0.005, memory: 2455, loss: 0.2296
+2023-02-05 00:18:25,066 - mmcls - INFO - Epoch [14][30/72]	lr: 3.845e-03, eta: 0:01:00, time: 0.101, data_time: 0.028, memory: 2455, loss: 0.2018
+2023-02-05 00:18:26,019 - mmcls - INFO - Epoch [14][40/72]	lr: 3.845e-03, eta: 0:00:58, time: 0.096, data_time: 0.017, memory: 2455, loss: 0.1695
+2023-02-05 00:18:27,017 - mmcls - INFO - Epoch [14][50/72]	lr: 3.845e-03, eta: 0:00:57, time: 0.099, data_time: 0.014, memory: 2455, loss: 0.2101
+2023-02-05 00:18:27,953 - mmcls - INFO - Epoch [14][60/72]	lr: 3.845e-03, eta: 0:00:56, time: 0.094, data_time: 0.008, memory: 2455, loss: 0.1229
+2023-02-05 00:18:28,956 - mmcls - INFO - Epoch [14][70/72]	lr: 3.845e-03, eta: 0:00:54, time: 0.101, data_time: 0.022, memory: 2455, loss: 0.1411
+2023-02-05 00:18:30,985 - mmcls - INFO - Epoch(val) [14][18]	accuracy_top-1: 95.1049, accuracy_top-5: 100.0000
+2023-02-05 00:18:34,188 - mmcls - INFO - Epoch [15][10/72]	lr: 3.768e-03, eta: 0:00:53, time: 0.317, data_time: 0.233, memory: 2455, loss: 0.1157
+2023-02-05 00:18:35,114 - mmcls - INFO - Epoch [15][20/72]	lr: 3.768e-03, eta: 0:00:52, time: 0.092, data_time: 0.006, memory: 2455, loss: 0.1011
+2023-02-05 00:18:36,109 - mmcls - INFO - Epoch [15][30/72]	lr: 3.768e-03, eta: 0:00:51, time: 0.100, data_time: 0.022, memory: 2455, loss: 0.1682
+2023-02-05 00:18:37,094 - mmcls - INFO - Epoch [15][40/72]	lr: 3.768e-03, eta: 0:00:49, time: 0.098, data_time: 0.021, memory: 2455, loss: 0.1551
+2023-02-05 00:18:38,181 - mmcls - INFO - Epoch [15][50/72]	lr: 3.768e-03, eta: 0:00:48, time: 0.109, data_time: 0.036, memory: 2455, loss: 0.1394
+2023-02-05 00:18:39,212 - mmcls - INFO - Epoch [15][60/72]	lr: 3.768e-03, eta: 0:00:46, time: 0.103, data_time: 0.027, memory: 2455, loss: 0.1640
+2023-02-05 00:18:40,168 - mmcls - INFO - Epoch [15][70/72]	lr: 3.768e-03, eta: 0:00:45, time: 0.096, data_time: 0.018, memory: 2455, loss: 0.1272
+2023-02-05 00:18:42,107 - mmcls - INFO - Epoch(val) [15][18]	accuracy_top-1: 94.4056, accuracy_top-5: 100.0000
+2023-02-05 00:18:45,299 - mmcls - INFO - Epoch [16][10/72]	lr: 3.693e-03, eta: 0:00:44, time: 0.315, data_time: 0.234, memory: 2455, loss: 0.1753
+2023-02-05 00:18:46,289 - mmcls - INFO - Epoch [16][20/72]	lr: 3.693e-03, eta: 0:00:43, time: 0.099, data_time: 0.029, memory: 2455, loss: 0.1215
+2023-02-05 00:18:47,258 - mmcls - INFO - Epoch [16][30/72]	lr: 3.693e-03, eta: 0:00:41, time: 0.097, data_time: 0.004, memory: 2455, loss: 0.1832
+2023-02-05 00:18:48,201 - mmcls - INFO - Epoch [16][40/72]	lr: 3.693e-03, eta: 0:00:40, time: 0.094, data_time: 0.004, memory: 2455, loss: 0.0994
+2023-02-05 00:18:49,157 - mmcls - INFO - Epoch [16][50/72]	lr: 3.693e-03, eta: 0:00:39, time: 0.095, data_time: 0.004, memory: 2455, loss: 0.1596
+2023-02-05 00:18:50,105 - mmcls - INFO - Epoch [16][60/72]	lr: 3.693e-03, eta: 0:00:37, time: 0.095, data_time: 0.004, memory: 2455, loss: 0.1233
+2023-02-05 00:18:51,093 - mmcls - INFO - Epoch [16][70/72]	lr: 3.693e-03, eta: 0:00:36, time: 0.099, data_time: 0.014, memory: 2455, loss: 0.1113
+2023-02-05 00:18:53,154 - mmcls - INFO - Epoch(val) [16][18]	accuracy_top-1: 94.9301, accuracy_top-5: 100.0000
+2023-02-05 00:18:56,298 - mmcls - INFO - Epoch [17][10/72]	lr: 3.619e-03, eta: 0:00:35, time: 0.311, data_time: 0.238, memory: 2455, loss: 0.1414
+2023-02-05 00:18:57,229 - mmcls - INFO - Epoch [17][20/72]	lr: 3.619e-03, eta: 0:00:34, time: 0.093, data_time: 0.013, memory: 2455, loss: 0.1311
+2023-02-05 00:18:58,194 - mmcls - INFO - Epoch [17][30/72]	lr: 3.619e-03, eta: 0:00:32, time: 0.097, data_time: 0.020, memory: 2455, loss: 0.1736
+2023-02-05 00:18:59,183 - mmcls - INFO - Epoch [17][40/72]	lr: 3.619e-03, eta: 0:00:31, time: 0.099, data_time: 0.021, memory: 2455, loss: 0.1409
+2023-02-05 00:19:00,129 - mmcls - INFO - Epoch [17][50/72]	lr: 3.619e-03, eta: 0:00:30, time: 0.095, data_time: 0.005, memory: 2455, loss: 0.1322
+2023-02-05 00:19:01,076 - mmcls - INFO - Epoch [17][60/72]	lr: 3.619e-03, eta: 0:00:28, time: 0.095, data_time: 0.005, memory: 2455, loss: 0.0850
+2023-02-05 00:19:02,131 - mmcls - INFO - Epoch [17][70/72]	lr: 3.619e-03, eta: 0:00:27, time: 0.105, data_time: 0.028, memory: 2455, loss: 0.1760
+2023-02-05 00:19:04,162 - mmcls - INFO - Epoch(val) [17][18]	accuracy_top-1: 95.8042, accuracy_top-5: 100.0000
+2023-02-05 00:19:07,393 - mmcls - INFO - Epoch [18][10/72]	lr: 3.547e-03, eta: 0:00:26, time: 0.319, data_time: 0.241, memory: 2455, loss: 0.1709
+2023-02-05 00:19:08,329 - mmcls - INFO - Epoch [18][20/72]	lr: 3.547e-03, eta: 0:00:24, time: 0.094, data_time: 0.013, memory: 2455, loss: 0.1054
+2023-02-05 00:19:09,272 - mmcls - INFO - Epoch [18][30/72]	lr: 3.547e-03, eta: 0:00:23, time: 0.095, data_time: 0.013, memory: 2455, loss: 0.1015
+2023-02-05 00:19:10,235 - mmcls - INFO - Epoch [18][40/72]	lr: 3.547e-03, eta: 0:00:22, time: 0.096, data_time: 0.003, memory: 2455, loss: 0.1235
+2023-02-05 00:19:11,182 - mmcls - INFO - Epoch [18][50/72]	lr: 3.547e-03, eta: 0:00:20, time: 0.095, data_time: 0.004, memory: 2455, loss: 0.1295
+2023-02-05 00:19:12,127 - mmcls - INFO - Epoch [18][60/72]	lr: 3.547e-03, eta: 0:00:19, time: 0.095, data_time: 0.012, memory: 2455, loss: 0.0735
+2023-02-05 00:19:13,108 - mmcls - INFO - Epoch [18][70/72]	lr: 3.547e-03, eta: 0:00:18, time: 0.098, data_time: 0.018, memory: 2455, loss: 0.1651
+2023-02-05 00:19:15,072 - mmcls - INFO - Epoch(val) [18][18]	accuracy_top-1: 95.6294, accuracy_top-5: 100.0000
+2023-02-05 00:19:18,254 - mmcls - INFO - Epoch [19][10/72]	lr: 3.476e-03, eta: 0:00:17, time: 0.314, data_time: 0.239, memory: 2455, loss: 0.1474
+2023-02-05 00:19:19,194 - mmcls - INFO - Epoch [19][20/72]	lr: 3.476e-03, eta: 0:00:15, time: 0.094, data_time: 0.015, memory: 2455, loss: 0.1238
+2023-02-05 00:19:20,192 - mmcls - INFO - Epoch [19][30/72]	lr: 3.476e-03, eta: 0:00:14, time: 0.102, data_time: 0.024, memory: 2455, loss: 0.1285
+2023-02-05 00:19:21,170 - mmcls - INFO - Epoch [19][40/72]	lr: 3.476e-03, eta: 0:00:13, time: 0.096, data_time: 0.002, memory: 2455, loss: 0.1299
+2023-02-05 00:19:22,136 - mmcls - INFO - Epoch [19][50/72]	lr: 3.476e-03, eta: 0:00:11, time: 0.097, data_time: 0.004, memory: 2455, loss: 0.1041
+2023-02-05 00:19:23,073 - mmcls - INFO - Epoch [19][60/72]	lr: 3.476e-03, eta: 0:00:10, time: 0.094, data_time: 0.011, memory: 2455, loss: 0.1118
+2023-02-05 00:19:24,068 - mmcls - INFO - Epoch [19][70/72]	lr: 3.476e-03, eta: 0:00:09, time: 0.099, data_time: 0.016, memory: 2455, loss: 0.1114
+2023-02-05 00:19:26,196 - mmcls - INFO - Epoch(val) [19][18]	accuracy_top-1: 95.9790, accuracy_top-5: 100.0000
+2023-02-05 00:19:29,386 - mmcls - INFO - Epoch [20][10/72]	lr: 3.406e-03, eta: 0:00:07, time: 0.316, data_time: 0.225, memory: 2455, loss: 0.1789
+2023-02-05 00:19:30,389 - mmcls - INFO - Epoch [20][20/72]	lr: 3.406e-03, eta: 0:00:06, time: 0.100, data_time: 0.012, memory: 2455, loss: 0.1424
+2023-02-05 00:19:31,406 - mmcls - INFO - Epoch [20][30/72]	lr: 3.406e-03, eta: 0:00:05, time: 0.101, data_time: 0.021, memory: 2455, loss: 0.1006
+2023-02-05 00:19:32,392 - mmcls - INFO - Epoch [20][40/72]	lr: 3.406e-03, eta: 0:00:04, time: 0.098, data_time: 0.019, memory: 2455, loss: 0.1407
+2023-02-05 00:19:33,436 - mmcls - INFO - Epoch [20][50/72]	lr: 3.406e-03, eta: 0:00:02, time: 0.104, data_time: 0.031, memory: 2455, loss: 0.0974
+2023-02-05 00:19:34,506 - mmcls - INFO - Epoch [20][60/72]	lr: 3.406e-03, eta: 0:00:01, time: 0.107, data_time: 0.033, memory: 2455, loss: 0.1162
+2023-02-05 00:19:35,589 - mmcls - INFO - Epoch [20][70/72]	lr: 3.406e-03, eta: 0:00:00, time: 0.109, data_time: 0.030, memory: 2455, loss: 0.1357
+2023-02-05 00:19:35,722 - mmcls - INFO - Saving checkpoint at 20 epochs
+2023-02-05 00:19:37,600 - mmcls - INFO - Epoch(val) [20][18]	accuracy_top-1: 95.8042, accuracy_top-5: 100.0000
